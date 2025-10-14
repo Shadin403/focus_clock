@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Focus Clock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark-glass {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen transition-all duration-500" :class="themeClass" x-data="pomodoroTimer()" @keydown.window="handleKeyboard($event)">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header with Controls -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div class="text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start gap-3 mb-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg">
+                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
+                            </svg>
+                        </div>
+                        <div class="text-2xl font-bold bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent">
+                            Redmi
+                        </div>
+                    </div>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-white mb-1">Focus Clock</h1>
+                <p class="text-purple-200 text-sm md:text-base">Advanced Pomodoro Technique Timer</p>
+            </div>
+
+            <!-- Top Controls -->
+            <div class="flex items-center gap-3">
+                <!-- Dark Mode Toggle -->
+                <button @click="toggleTheme()" class="p-2 rounded-full glass-morphism text-white hover:bg-white/20 transition-all duration-200"
+                        title="Toggle Dark Mode">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+
+                <!-- Settings Button -->
+                <button @click="openModal('settings')" class="p-2 rounded-full glass-morphism text-white hover:bg-white/20 transition-all duration-200"
+                        title="Settings">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"/>
+                    </svg>
+                </button>
+
+                <!-- Statistics Button -->
+                <button @click="openModal('stats')" class="p-2 rounded-full glass-morphism text-white hover:bg-white/20 transition-all duration-200"
+                        title="Statistics">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex flex-col lg:flex-row gap-8 items-start justify-center">
+            <!-- Timer Section -->
+            <div class="flex-1 max-w-md mx-auto lg:mx-0">
+                <!-- Main Timer Display -->
+                <div class="glass-morphism rounded-3xl p-8 shadow-2xl border border-white/20 mb-6">
+                    <!-- Mode Display -->
+                    <div class="text-center mb-6">
+                        <div class="inline-flex items-center glass-morphism rounded-full px-4 py-2 mb-4">
+                            <div class="w-3 h-3 rounded-full mr-3 animate-pulse" :class="modeClasses"></div>
+                            <span class="text-white font-medium" x-text="modeText"></span>
+                        </div>
+                        <div class="text-purple-200 text-sm mb-2 min-h-[1.25rem]" x-show="showCurrentTask" x-text="`Working on: ${currentTaskText}`"></div>
+                    </div>
+
+                    <!-- Timer Circle -->
+                    <div class="relative mb-8">
+                        <svg class="w-48 h-48 mx-auto transform -rotate-90 drop-shadow-lg" viewBox="0 0 100 100">
+                            <!-- Background circle -->
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+                            <!-- Progress circle -->
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor"
+                                    stroke-width="8" stroke-linecap="round" class="text-white transition-all duration-300"
+                                    stroke-dasharray="283" :stroke-dashoffset="progressOffset"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-4xl md:text-5xl font-mono font-bold text-white mb-2 tabular-nums" x-text="timerDisplay"></div>
+                                <div class="text-purple-200 text-sm" x-text="timerLabel"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Controls -->
+                    <div class="flex justify-center space-x-4 mb-6">
+                        <button @click="start()" x-show="showStart"
+                                class="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 flex items-center shadow-lg hover:shadow-green-500/25">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                            </svg>
+                            Start
+                        </button>
+                        <button @click="pause()" x-show="showPause"
+                                class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 flex items-center shadow-lg hover:shadow-yellow-500/25">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                            </svg>
+                            Pause
+                        </button>
+                        <button @click="reset()"
+                                class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 flex items-center shadow-lg hover:shadow-gray-500/25">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                            </svg>
+                            Reset
+                        </button>
+                    </div>
+
+                    <!-- Session Info -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="glass-morphism rounded-xl p-4 text-center">
+                            <div class="text-2xl font-bold text-white font-mono" x-text="sessionCountDisplay"></div>
+                            <div class="text-purple-200 text-sm">Current Session</div>
+                        </div>
+                        <div class="glass-morphism rounded-xl p-4 text-center">
+                            <div class="text-2xl font-bold text-white font-mono" x-text="completedCountDisplay"></div>
+                            <div class="text-purple-200 text-sm">Completed Today</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Settings -->
+                    <div class="border-t border-white/20 pt-6">
+                        <h3 class="text-white font-semibold mb-4 text-center">Quick Settings</h3>
+                        <div class="grid grid-cols-3 gap-2 mb-4">
+                            <button @click="setFocusTime(15)" class="timer-btn py-2 px-3 rounded-lg transition-all duration-200 font-medium"
+                                    :class="timerButtons[0].active ? 'bg-white/20 text-white' : 'bg-white/10 hover:bg-white/20 text-white'">
+                                15m
+                            </button>
+                            <button @click="setFocusTime(25)" class="timer-btn py-2 px-3 rounded-lg font-medium"
+                                    :class="timerButtons[1].active ? 'bg-white/20 text-white' : 'bg-white/10 hover:bg-white/20 text-white'">
+                                25m
+                            </button>
+                            <button @click="setFocusTime(45)" class="timer-btn py-2 px-3 rounded-lg transition-all duration-200 font-medium"
+                                    :class="timerButtons[2].active ? 'bg-white/20 text-white' : 'bg-white/10 hover:bg-white/20 text-white'">
+                                45m
+                            </button>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-purple-200 text-sm">Focus Duration</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Motivational Quote -->
+                <div class="glass-morphism rounded-xl p-4 border border-white/10">
+                    <div class="text-center">
+                        <p class="text-purple-100 text-sm italic" x-text="`"${currentQuote.text}"`"></p>
+                        <p class="text-purple-300 text-xs mt-2" x-text="`— ${currentQuote.author}`"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Management Sidebar -->
+            <div class="w-full lg:w-80">
+                <div class="glass-morphism rounded-xl p-6 border border-white/10">
+                    <h3 class="text-white font-semibold mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        Today's Tasks
+                    </h3>
+
+                    <!-- Add Task Form -->
+                    <div class="mb-4">
+                        <div class="flex gap-2">
+                            <input type="text" x-model="newTaskText" @keyup.enter="addTask()" placeholder="Add a new task..."
+                                   class="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-purple-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent">
+                            <button @click="addTask()"
+                                    class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors duration-200">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Task List -->
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
+                        <template x-for="task in tasks" :key="task.id">
+                            <div class="task-item flex items-center gap-3 p-3 glass-morphism rounded-lg border border-white/10 hover:bg-white/10 transition-colors duration-200"
+                                 :class="{ 'selected': task.selected }"
+                                 @click="selectTask(task)">
+                                <input type="checkbox" class="task-checkbox rounded" :checked="task.completed" @change="toggleTask(task)">
+                                <span class="task-text flex-1 text-white text-sm" :class="{ 'line-through opacity-50': task.completed }" x-text="task.text"></span>
+                                <button @click.stop="deleteTask(task.id)" class="task-delete text-red-400 hover:text-red-300">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                        <div x-show="tasks.length === 0" class="text-purple-300 text-sm text-center py-4">
+                            No tasks yet. Add one above to get started!
+                        </div>
+                    </div>
+
+                    <!-- Task Statistics -->
+                    <div class="mt-6 pt-4 border-t border-white/20">
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div>
+                                <div class="text-lg font-bold text-white font-mono" x-text="totalTasks"></div>
+                                <div class="text-purple-300 text-xs">Total Tasks</div>
+                            </div>
+                            <div>
+                                <div class="text-lg font-bold text-white font-mono" x-text="completedTasks"></div>
+                                <div class="text-purple-300 text-xs">Completed</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="max-w-4xl mx-auto mt-8 text-center">
+            <div class="glass-morphism rounded-xl p-6 border border-white/10">
+                <h3 class="text-white font-semibold mb-3">How to use the Pomodoro Technique</h3>
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div class="text-purple-200">
+                        <div class="font-semibold text-white mb-1">🍅 Focus (25 minutes)</div>
+                        Work intensely on a single task without distractions
+                    </div>
+                    <div class="text-purple-200">
+                        <div class="font-semibold text-white mb-1">☕ Short Break (5 minutes)</div>
+                        Step away, stretch, hydrate, and relax your mind
+                    </div>
+                    <div class="text-purple-200">
+                        <div class="font-semibold text-white mb-1">🏖️ Long Break (15 minutes)</div>
+                        After 4 sessions, take a longer break to recharge
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-16 py-8 border-t border-white/10">
+        <div class="container mx-auto px-4 text-center">
+            <div class="glass-morphism rounded-2xl p-6 border border-white/10">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <!-- Copyright Info -->
+                    <div class="text-purple-200 text-sm">
+                        © 2025 Developer Shadin. All rights reserved.
+                    </div>
+
+                    <!-- Developer Info -->
+                    <div class="flex items-center gap-4">
+                        <div class="text-center">
+                            <div class="text-white font-semibold">Shadin Sarkar</div>
+                            <div class="text-purple-300 text-sm">Advanced Web Developer</div>
+                        </div>
+                        <a href="https://dev-shadin.com"
+                           target="_blank"
+                           class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-lg hover:shadow-purple-500/25">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                            Portfolio
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Project Info -->
+                <div class="mt-6 pt-6 border-t border-white/20">
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-4 text-sm text-purple-300">
+                        <span>🍅 Built with Alpine.js & Tailwind CSS</span>
+                        <span>•</span>
+                        <span>🔊 10 Unique Sound Notifications</span>
+                        <span>•</span>
+                        <span>📱 Fully Responsive Design</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Settings Modal -->
+    <div x-show="showSettingsModal" x-cloak
+         class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+         x-on:click.self="closeModal('settings')">
+        <div class="glass-morphism rounded-2xl p-8 m-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Settings</h2>
+                <button @click="closeModal('settings')" class="text-purple-300 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Timer Settings -->
+            <div class="mb-6">
+                <h3 class="text-white font-semibold mb-3">Timer Durations</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-purple-200 text-sm mb-2">Focus Time (minutes)</label>
+                        <input type="number" x-model="settings.focusTime" min="1" max="60"
+                               class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-purple-200 text-sm mb-2">Short Break (minutes)</label>
+                        <input type="number" x-model="settings.shortBreak" min="1" max="30"
+                               class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-purple-200 text-sm mb-2">Long Break (minutes)</label>
+                        <input type="number" x-model="settings.longBreak" min="1" max="60"
+                               class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sound Settings -->
+            <div class="mb-6">
+                <h3 class="text-white font-semibold mb-3">Sound & Notifications</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-purple-200 text-sm">Enable Sound Notifications</label>
+                        <input type="checkbox" x-model="settings.soundEnabled" class="rounded">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="text-purple-200 text-sm">Desktop Notifications</label>
+                        <input type="checkbox" x-model="settings.desktopNotifications" class="rounded">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="text-purple-200 text-sm">Auto-start Breaks</label>
+                        <input type="checkbox" x-model="settings.autoStartBreaks" class="rounded">
+                    </div>
+
+                    <!-- Sound Selection -->
+                    <div>
+                        <label class="block text-purple-200 text-sm mb-2">Notification Sound</label>
+                        <select x-model="settings.selectedSound" class="w-full bg-slate-800/80 border border-purple-400/50 rounded-lg px-3 py-2 text-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400">
+                            <option value="chime" class="bg-slate-800 text-purple-100">Chime</option>
+                            <option value="bell" class="bg-slate-800 text-purple-100">Bell</option>
+                            <option value="digital" class="bg-slate-800 text-purple-100">Digital</option>
+                            <option value="gentle" class="bg-slate-800 text-purple-100">Gentle</option>
+                            <option value="bright" class="bg-slate-800 text-purple-100">Bright</option>
+                            <option value="deep" class="bg-slate-800 text-purple-100">Deep</option>
+                            <option value="crystal" class="bg-slate-800 text-purple-100">Crystal</option>
+                            <option value="warm" class="bg-slate-800 text-purple-100">Warm</option>
+                            <option value="sharp" class="bg-slate-800 text-purple-100">Sharp</option>
+                            <option value="melodic" class="bg-slate-800 text-purple-100">Melodic</option>
+                        </select>
+                    </div>
+
+                    <!-- Sound Preview -->
+                    <div class="flex items-center justify-between">
+                        <label class="text-purple-200 text-sm">Preview Sound</label>
+                        <button @click="previewSound()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-200">
+                            Play Sound
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme Settings -->
+            <div class="mb-6">
+                <h3 class="text-white font-semibold mb-3">Appearance</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-purple-200 text-sm mb-2">Theme</label>
+                        <select x-model="settings.theme" class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white">
+                            <option value="purple">Purple Gradient</option>
+                            <option value="blue">Blue Ocean</option>
+                            <option value="green">Forest Green</option>
+                            <option value="dark">Pure Dark</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <label class="text-purple-200 text-sm">Reduced Motion</label>
+                        <input type="checkbox" x-model="settings.reducedMotion" class="rounded">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="mb-6">
+                <h3 class="text-white font-semibold mb-3">Data Management</h3>
+                <div class="space-y-3">
+                    <button @click="exportData()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Export Statistics
+                    </button>
+                    <button @click="importData()" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Import Data
+                    </button>
+                    <button @click="clearData()" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Clear All Data
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button @click="saveSettings()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                    Save Settings
+                </button>
+                <button @click="closeModal('settings')" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Modal -->
+    <div x-show="showStatsModal" x-cloak
+         class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+         x-on:click.self="closeModal('stats')">
+        <div class="glass-morphism rounded-2xl p-8 m-4 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-white">Statistics</h2>
+                <button @click="closeModal('stats')" class="text-purple-300 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Today's Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-morphism rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-white font-mono" x-text="todaySessions"></div>
+                    <div class="text-purple-300 text-sm">Sessions Today</div>
+                </div>
+                <div class="glass-morphism rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-white font-mono" x-text="todayFocusTime"></div>
+                    <div class="text-purple-300 text-sm">Focus Time</div>
+                </div>
+                <div class="glass-morphism rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-white font-mono" x-text="todayBreaks"></div>
+                    <div class="text-purple-300 text-sm">Breaks Taken</div>
+                </div>
+                <div class="glass-morphism rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-white font-mono" x-text="todayProductivity"></div>
+                    <div class="text-purple-300 text-sm">Productivity</div>
+                </div>
+            </div>
+
+            <!-- Weekly Chart Placeholder -->
+            <div class="glass-morphism rounded-xl p-6 mb-6">
+                <h3 class="text-white font-semibold mb-4">Weekly Progress</h3>
+                <div class="h-32 flex items-end justify-between gap-2">
+                    <div class="bg-purple-500/50 rounded-t flex-1 h-16" title="Mon: 4 sessions"></div>
+                    <div class="bg-purple-500/70 rounded-t flex-1 h-20" title="Tue: 5 sessions"></div>
+                    <div class="bg-purple-500/90 rounded-t flex-1 h-24" title="Wed: 6 sessions"></div>
+                    <div class="bg-purple-500 rounded-t flex-1 h-28" title="Thu: 7 sessions"></div>
+                    <div class="bg-purple-500/80 rounded-t flex-1 h-22" title="Fri: 5.5 sessions"></div>
+                    <div class="bg-purple-500/60 rounded-t flex-1 h-18" title="Sat: 4.5 sessions"></div>
+                    <div class="bg-purple-500/40 rounded-t flex-1 h-12" title="Sun: 3 sessions"></div>
+                </div>
+                <div class="flex justify-between mt-2 text-purple-300 text-xs">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+            </div>
+
+            <!-- Recent Sessions -->
+            <div class="glass-morphism rounded-xl p-6">
+                <h3 class="text-white font-semibold mb-4">Recent Sessions</h3>
+                <div class="space-y-2">
+                    <template x-for="session in recentSessions" :key="session.timestamp">
+                        <div class="flex justify-between items-center py-2 px-3 glass-morphism rounded-lg">
+                            <div class="flex items-center gap-2">
+                                <span x-text="session.mode"></span>
+                                <span class="text-white text-sm" x-text="`${session.duration}m`"></span>
+                            </div>
+                            <span class="text-purple-300 text-xs" x-text="session.time"></span>
+                        </div>
+                    </template>
+                    <div x-show="recentSessions.length === 0" class="text-purple-300 text-sm text-center py-4">
+                        Complete some sessions to see your history here!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
