@@ -268,6 +268,6 @@ If you encounter any issues or have questions:
 
 **Built with ❤️ for productivity enthusiasts**
 
-**Made by Shadin Sarkar - Advanced Web Developer**  
+**Made by Shadin Sarkar - Full-Stack Developer**  
 🌐 **Portfolio:** [https://dev-shadin.com](https://dev-shadin.com)  
-📧 **Developer:** Shadin Sarkar
+📧 **Expertise:** Laravel & Vue.js Development
