@@ -4,6 +4,8 @@
 [![Tailwind CSS](https://img.shields.io/badge/Styled%20with-Tailwind%20CSS-blue)](https://tailwindcss.com/)
 [![JavaScript](https://img.shields.io/badge/Powered%20by-JavaScript-red)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
+Preview Link : https://focusclock.dev-shadin.com 
+
 A sophisticated, feature-rich Pomodoro Technique timer built with modern web technologies. This application combines productivity science with beautiful design and advanced functionality to help you maintain focus and boost your productivity.
 
 ![Redmi Focus Clock Preview](https://via.placeholder.com/800x400/6366f1/ffffff?text=🍅+Redmi+Focus+Clock)
