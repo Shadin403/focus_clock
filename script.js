@@ -19,6 +19,8 @@ document.addEventListener("alpine:init", () => {
     isRunning: false,
     isPaused: false,
     interval: null,
+    lastUpdate: Date.now(), // Track last update time for accurate timing
+    tabHiddenTime: null, // Track when tab was hidden for accurate timing
 
     // Session tracking
     sessionCount: 1,
@@ -79,6 +81,16 @@ document.addEventListener("alpine:init", () => {
       this.updateMotivationalQuote();
       this.requestNotificationPermission();
       this.$watch("settings", () => this.saveSettings(), { deep: true });
+
+      // Initialize lastUpdate for accurate time tracking
+      this.lastUpdate = Date.now();
+
+      // Handle page visibility changes for accurate timing
+      this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+      document.addEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange
+      );
     },
 
     // Timer Controls
@@ -86,8 +98,10 @@ document.addEventListener("alpine:init", () => {
       if (this.isPaused) {
         this.isPaused = false;
         this.isRunning = true;
+        this.lastUpdate = Date.now();
       } else if (!this.isRunning) {
         this.isRunning = true;
+        this.lastUpdate = Date.now();
         this.startSession();
       }
 
@@ -131,15 +145,39 @@ document.addEventListener("alpine:init", () => {
         clearInterval(this.interval);
       }
 
+      this.lastUpdate = Date.now();
+
       this.interval = setInterval(() => {
+        // Calculate actual elapsed time to handle tab switching
+        const now = Date.now();
+        const elapsed = Math.floor((now - this.lastUpdate) / 1000);
+
+        if (elapsed > 0) {
+          // Adjust currentTime based on actual elapsed time
+          if (this.currentTime >= elapsed) {
+            this.currentTime -= elapsed;
+            this.lastUpdate = now;
+            this.updateDisplay();
+            this.updateProgress();
+          } else {
+            // Timer has completed
+            this.currentTime = 0;
+            this.lastUpdate = now;
+            this.updateDisplay();
+            this.updateProgress();
+            this.handleTimerComplete();
+            return;
+          }
+        }
+
+        // Regular 1-second update for display consistency
         if (this.currentTime > 0) {
-          this.currentTime--;
           this.updateDisplay();
           this.updateProgress();
         } else {
           this.handleTimerComplete();
         }
-      }, 1000);
+      }, 100);
     },
 
     handleTimerComplete() {
@@ -1071,6 +1109,56 @@ document.addEventListener("alpine:init", () => {
     get modalOpen() {
       return this.showSettingsModal || this.showStatsModal;
     },
+
+    // Handle page visibility changes to maintain accurate timing
+    handleVisibilityChange() {
+      if (document.hidden) {
+        // Tab is hidden, store the time
+        if (this.isRunning && !this.isPaused) {
+          // Store the time when tab became hidden
+          this.tabHiddenTime = Date.now();
+        }
+      } else {
+        // Tab is visible again, adjust timer if needed
+        if (this.isRunning && !this.isPaused && this.tabHiddenTime) {
+          // Calculate elapsed time while tab was hidden
+          const hiddenDuration = Date.now() - this.tabHiddenTime;
+          const elapsedSeconds = Math.floor(hiddenDuration / 1000);
+
+          // Adjust currentTime based on hidden duration
+          if (elapsedSeconds > 0 && this.currentTime >= elapsedSeconds) {
+            this.currentTime -= elapsedSeconds;
+          } else if (elapsedSeconds > 0 && this.currentTime < elapsedSeconds) {
+            // Timer should have completed while tab was hidden
+            this.currentTime = 0;
+            this.lastUpdate = Date.now();
+            this.updateDisplay();
+            this.updateProgress();
+            this.handleTimerComplete();
+            this.tabHiddenTime = null;
+            return;
+          }
+
+          this.lastUpdate = Date.now();
+          this.updateDisplay();
+          this.updateProgress();
+
+          // Clear the hidden time
+          this.tabHiddenTime = null;
+        }
+      }
+    },
+
+    // Add cleanup for event listeners
+    destroy() {
+      if (this.interval) {
+        clearInterval(this.interval);
+      }
+      document.removeEventListener(
+        "visibilitychange",
+        this.handleVisibilityChange
+      );
+    },
   }));
 });
 
@@ -1078,13 +1166,5 @@ document.addEventListener("alpine:init", () => {
 document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("keydown", (e) => {
     // This will be handled by Alpine.js x-on:keydown
-  });
-
-  // Handle page visibility changes
-  document.addEventListener("visibilitychange", () => {
-    const pomodoro = document.querySelector("[x-data]")._x_dataStack[0];
-    if (document.hidden && pomodoro.isRunning) {
-      pomodoro.pause();
-    }
   });
 });
