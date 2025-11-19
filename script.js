@@ -50,29 +50,8 @@ document.addEventListener("alpine:init", () => {
     showSettingsModal: false,
     showStatsModal: false,
 
-    // Motivational quotes
-    quotes: [
-      {
-        text: "The journey of a thousand miles begins with a single step.",
-        author: "Lao Tzu",
-      },
-      {
-        text: "Focus on being productive instead of busy.",
-        author: "Tim Ferriss",
-      },
-      {
-        text: "Productivity is never an accident. It is always the result of a commitment to excellence.",
-        author: "Paul J. Meyer",
-      },
-      {
-        text: "The key is not to prioritize what's on your schedule, but to schedule your priorities.",
-        author: "Stephen Covey",
-      },
-      {
-        text: "You don't need to see the whole staircase, just take the first step.",
-        author: "Martin Luther King Jr.",
-      },
-    ],
+    // Motivational quotes - using quotesy library
+    quotes: [],
 
     // Initialize the application
     init() {
@@ -80,7 +59,7 @@ document.addEventListener("alpine:init", () => {
       this.loadStatistics();
       this.loadTasks();
       this.updateTheme();
-      this.updateMotivationalQuote();
+      this.loadMotivationalQuotes();
       this.requestNotificationPermission();
       this.$watch("settings", () => this.saveSettings(), { deep: true });
 
@@ -411,6 +390,76 @@ document.addEventListener("alpine:init", () => {
         ...btn,
         active: btn.minutes === minutes,
       }));
+    },
+
+    // Load motivational quotes from API
+    async loadMotivationalQuotes() {
+      try {
+        // Try to fetch quotes from Quotable API
+        const response = await fetch(
+          "https://api.quotable.io/quotes?limit=50&tags=inspiration,motivation,success,happiness,life,freedom"
+        );
+        if (response.ok) {
+          const data = await response.json();
+          this.quotes = data.results.map((quote) => ({
+            text: quote.content,
+            author: quote.author,
+          }));
+        } else {
+          throw new Error("API request failed");
+        }
+      } catch (error) {
+        console.log(
+          "Could not load quotes from API, using fallback quotes:",
+          error
+        );
+        // Fallback to default quotes if API fails
+        this.quotes = [
+          {
+            text: "The journey of a thousand miles begins with a single step.",
+            author: "Lao Tzu",
+          },
+          {
+            text: "Focus on being productive instead of busy.",
+            author: "Tim Ferriss",
+          },
+          {
+            text: "Productivity is never an accident. It is always the result of a commitment to excellence.",
+            author: "Paul J. Meyer",
+          },
+          {
+            text: "The key is not to prioritize what's on your schedule, but to schedule your priorities.",
+            author: "Stephen Covey",
+          },
+          {
+            text: "You don't need to see the whole staircase, just take the first step.",
+            author: "Martin Luther King Jr.",
+          },
+          {
+            text: "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+            author: "Winston Churchill",
+          },
+          {
+            text: "The only way to do great work is to love what you do.",
+            author: "Steve Jobs",
+          },
+          {
+            text: "Believe you can and you're halfway there.",
+            author: "Theodore Roosevelt",
+          },
+          {
+            text: "Your time is limited, so don't waste it living someone else's life.",
+            author: "Steve Jobs",
+          },
+          {
+            text: "The future depends on what you do today.",
+            author: "Mahatma Gandhi",
+          },
+        ];
+      }
+
+      // Update the current quote after loading
+      this.updateMotivationalQuote();
     },
 
     // Manual Break feature
