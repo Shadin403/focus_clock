@@ -219,6 +219,19 @@
                         </div>
                     </div>
 
+                    <!-- Manual Break Section -->
+                    <div class="mt-6 pt-4 border-t border-white/20">
+                        <h4 class="text-white font-semibold mb-3">Manual Break</h4>
+                        <p class="text-purple-200 text-sm mb-3">Start a custom break period whenever you need it.</p>
+                        <button @click="startManualBreak()"
+                                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center shadow-lg hover:shadow-purple-500/25">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Start Manual Break
+                        </button>
+                    </div>
+
                     <!-- Task Statistics -->
                     <div class="mt-6 pt-4 border-t border-white/20">
                         <div class="grid grid-cols-2 gap-4 text-center">
@@ -331,6 +344,11 @@
                     <div>
                         <label class="block text-purple-200 text-sm mb-2">Long Break (minutes)</label>
                         <input type="number" x-model="settings.longBreak" min="1" max="60"
+                               class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-purple-200 text-sm mb-2">Manual Break (minutes)</label>
+                        <input type="number" x-model="settings.manualBreakTime" min="1" max="120"
                                class="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white">
                     </div>
                 </div>

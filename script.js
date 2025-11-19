@@ -6,6 +6,7 @@ document.addEventListener("alpine:init", () => {
       focusTime: 25 * 60,
       shortBreak: 5 * 60,
       longBreak: 15 * 60,
+      manualBreakTime: 10 * 60,
       soundEnabled: true,
       desktopNotifications: false,
       autoStartBreaks: true,
@@ -26,7 +27,7 @@ document.addEventListener("alpine:init", () => {
     // Session tracking
     sessionCount: 1,
     completedSessions: 0,
-    currentMode: "focus", // 'focus', 'shortBreak', 'longBreak'
+    currentMode: "focus", // 'focus', 'shortBreak', 'longBreak', 'manualBreak'
     currentTask: null,
 
     // Statistics
@@ -270,6 +271,7 @@ document.addEventListener("alpine:init", () => {
       this.updateDisplay();
       this.updateProgress();
 
+      // Only auto-start if this is not a manual break completion
       if (this.settings.autoStartBreaks) {
         setTimeout(() => {
           if (!this.isRunning && !this.isPaused) {
@@ -296,7 +298,9 @@ document.addEventListener("alpine:init", () => {
             ? this.settings.focusTime - this.currentTime
             : this.currentMode === "shortBreak"
             ? this.settings.shortBreak
-            : this.settings.longBreak,
+            : this.currentMode === "longBreak"
+            ? this.settings.longBreak
+            : this.settings.manualBreakTime,
         timestamp: new Date().toISOString(),
         taskId: this.currentTask,
       };
@@ -337,7 +341,9 @@ document.addEventListener("alpine:init", () => {
           ? this.settings.focusTime
           : this.currentMode === "shortBreak"
           ? this.settings.shortBreak
-          : this.settings.longBreak;
+          : this.currentMode === "longBreak"
+          ? this.settings.longBreak
+          : this.settings.manualBreakTime;
 
       const circumference = 283;
       this.progressOffset =
@@ -349,13 +355,16 @@ document.addEventListener("alpine:init", () => {
         "bg-green-400": this.currentMode === "focus",
         "bg-yellow-400": this.currentMode === "shortBreak",
         "bg-red-400": this.currentMode === "longBreak",
+        "bg-purple-400": this.currentMode === "manualBreak",
       };
       this.modeText =
         this.currentMode === "focus"
           ? "Focus Time"
           : this.currentMode === "shortBreak"
           ? "Short Break"
-          : "Long Break";
+          : this.currentMode === "longBreak"
+          ? "Long Break"
+          : "Manual Break";
     },
 
     updateButtons() {
@@ -402,6 +411,29 @@ document.addEventListener("alpine:init", () => {
         ...btn,
         active: btn.minutes === minutes,
       }));
+    },
+
+    // Manual Break feature
+    startManualBreak() {
+      if (this.isRunning) {
+        this.pause(); // Pause current timer before starting manual break
+      }
+
+      this.currentMode = "manualBreak";
+      this.currentTime = this.settings.manualBreakTime;
+      this.currentTask = null; // No task selection for manual breaks
+
+      this.updateModeDisplay();
+      this.updateDisplay();
+      this.updateProgress();
+      this.updateCurrentTask();
+
+      // Auto-start the manual break timer
+      setTimeout(() => {
+        if (!this.isRunning && !this.isPaused) {
+          this.start();
+        }
+      }, 500);
     },
 
     // Task Management
@@ -1134,7 +1166,9 @@ document.addEventListener("alpine:init", () => {
           ? this.settings.focusTime
           : this.currentMode === "shortBreak"
           ? this.settings.shortBreak
-          : this.settings.longBreak;
+          : this.currentMode === "longBreak"
+          ? this.settings.longBreak
+          : this.settings.manualBreakTime;
       const circumference = 283;
       return circumference - (this.currentTime / totalTime) * circumference;
     },
@@ -1144,6 +1178,7 @@ document.addEventListener("alpine:init", () => {
         "bg-green-400": this.currentMode === "focus",
         "bg-yellow-400": this.currentMode === "shortBreak",
         "bg-red-400": this.currentMode === "longBreak",
+        "bg-purple-400": this.currentMode === "manualBreak",
       };
     },
 
@@ -1152,7 +1187,9 @@ document.addEventListener("alpine:init", () => {
         ? "Focus Time"
         : this.currentMode === "shortBreak"
         ? "Short Break"
-        : "Long Break";
+        : this.currentMode === "longBreak"
+        ? "Long Break"
+        : "Manual Break";
     },
 
     get showStart() {
