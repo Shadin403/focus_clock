@@ -21,6 +21,7 @@ document.addEventListener("alpine:init", () => {
     interval: null,
     lastUpdate: Date.now(), // Track last update time for accurate timing
     tabHiddenTime: null, // Track when tab was hidden for accurate timing
+    audioContext: null, // Audio context for playing sounds
 
     // Session tracking
     sessionCount: 1,
@@ -91,6 +92,34 @@ document.addEventListener("alpine:init", () => {
         "visibilitychange",
         this.handleVisibilityChange
       );
+
+      // Initialize audio context on first user interaction
+      this.initAudioContext();
+    },
+
+    // Initialize audio context on first user interaction
+    initAudioContext() {
+      this.initAudioHandler = () => {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!this.audioContext && AudioContext) {
+            this.audioContext = new AudioContext();
+          }
+        } catch (error) {
+          console.log("Could not initialize audio context:", error);
+        }
+
+        // Remove event listeners after first interaction
+        document.removeEventListener("click", this.initAudioHandler);
+        document.removeEventListener("touchstart", this.initAudioHandler);
+        document.removeEventListener("keydown", this.initAudioHandler);
+      };
+
+      // Initialize audio context on first user interaction
+      // This is required by browsers to enable audio playback
+      document.addEventListener("click", this.initAudioHandler);
+      document.addEventListener("touchstart", this.initAudioHandler);
+      document.addEventListener("keydown", this.initAudioHandler);
     },
 
     // Timer Controls
@@ -199,6 +228,9 @@ document.addEventListener("alpine:init", () => {
       if (this.settings.desktopNotifications) {
         this.showDesktopNotification();
       }
+
+      // Also show a visual indication that the timer completed
+      this.showTimerCompletionNotification();
 
       if (this.currentMode === "focus") {
         this.handleFocusComplete();
@@ -548,7 +580,13 @@ document.addEventListener("alpine:init", () => {
     },
 
     showDesktopNotification() {
-      if ("Notification" in window && Notification.permission === "granted") {
+      // Check if we can show notifications
+      if (!("Notification" in window)) {
+        return;
+      }
+
+      // If permission is granted, show notification
+      if (Notification.permission === "granted") {
         const title =
           this.currentMode === "focus"
             ? "Focus session complete!"
@@ -557,52 +595,104 @@ document.addEventListener("alpine:init", () => {
           this.currentMode === "focus"
             ? "Great job! Time for a break."
             : "Ready for another focus session?";
-        new Notification(title, { body, icon: "/favicon.ico" });
+
+        try {
+          new Notification(title, {
+            body,
+            icon: "/favicon.ico",
+            // Add timestamp to make it more prominent
+            timestamp: Date.now(),
+          });
+        } catch (error) {
+          console.log("Could not show desktop notification:", error);
+        }
+      }
+      // If permission is not granted, request it
+      else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            this.showDesktopNotification(); // Try again
+          }
+        });
       }
     },
 
     // Sound Generation Methods
     playSound(soundType = this.settings.selectedSound) {
       try {
-        const audioContext = new (window.AudioContext ||
-          window.webkitAudioContext)();
+        // Use existing audio context or create a new one
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!this.audioContext) {
+          this.audioContext = new AudioContext();
+        }
 
-        switch (soundType) {
-          case "chime":
-            this.playChime(audioContext);
-            break;
-          case "bell":
-            this.playBell(audioContext);
-            break;
-          case "digital":
-            this.playDigital(audioContext);
-            break;
-          case "gentle":
-            this.playGentle(audioContext);
-            break;
-          case "bright":
-            this.playBright(audioContext);
-            break;
-          case "deep":
-            this.playDeep(audioContext);
-            break;
-          case "crystal":
-            this.playCrystal(audioContext);
-            break;
-          case "warm":
-            this.playWarm(audioContext);
-            break;
-          case "sharp":
-            this.playSharp(audioContext);
-            break;
-          case "melodic":
-            this.playMelodic(audioContext);
-            break;
-          default:
-            this.playChime(audioContext);
+        // Resume audio context if suspended (common in background tabs)
+        if (this.audioContext.state === "suspended") {
+          this.audioContext
+            .resume()
+            .then(() => {
+              this.playSoundWithAudioContext(this.audioContext, soundType);
+            })
+            .catch((error) => {
+              console.log("Could not resume audio context:", error);
+              // Fallback to creating a new audio context
+              const newAudioContext = new AudioContext();
+              this.playSoundWithAudioContext(newAudioContext, soundType);
+            });
+        } else {
+          this.playSoundWithAudioContext(this.audioContext, soundType);
         }
       } catch (error) {
         console.log("Could not play notification sound:", error);
+        // Last resort fallback
+        try {
+          const fallbackAudioContext = new (window.AudioContext ||
+            window.webkitAudioContext)();
+          this.playSoundWithAudioContext(fallbackAudioContext, soundType);
+        } catch (fallbackError) {
+          console.log(
+            "Could not play notification sound with fallback:",
+            fallbackError
+          );
+        }
+      }
+    },
+
+    // Play sound with a given audio context
+    playSoundWithAudioContext(audioContext, soundType) {
+      switch (soundType) {
+        case "chime":
+          this.playChime(audioContext);
+          break;
+        case "bell":
+          this.playBell(audioContext);
+          break;
+        case "digital":
+          this.playDigital(audioContext);
+          break;
+        case "gentle":
+          this.playGentle(audioContext);
+          break;
+        case "bright":
+          this.playBright(audioContext);
+          break;
+        case "deep":
+          this.playDeep(audioContext);
+          break;
+        case "crystal":
+          this.playCrystal(audioContext);
+          break;
+        case "warm":
+          this.playWarm(audioContext);
+          break;
+        case "sharp":
+          this.playSharp(audioContext);
+          break;
+        case "melodic":
+          this.playMelodic(audioContext);
+          break;
+        default:
+          this.playChime(audioContext);
       }
     },
 
@@ -866,8 +956,60 @@ document.addEventListener("alpine:init", () => {
       });
     },
 
+    // Enhanced playNotification method that tries to play sound even in background
     playNotification() {
-      this.playSound();
+      try {
+        // Try to resume or create audio context
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!this.audioContext) {
+          this.audioContext = new AudioContext();
+        }
+
+        // Resume audio context if suspended (common in background tabs)
+        if (this.audioContext.state === "suspended") {
+          this.audioContext
+            .resume()
+            .then(() => {
+              this.playSound();
+            })
+            .catch((error) => {
+              console.log("Could not resume audio context:", error);
+              // Fallback to regular play
+              this.playSound();
+            });
+        } else {
+          this.playSound();
+        }
+      } catch (error) {
+        console.log("Could not play notification sound:", error);
+        // Fallback to regular play
+        this.playSound();
+      }
+    },
+
+    // Show a visual notification when timer completes
+    showTimerCompletionNotification() {
+      // Create a visual notification that will be visible when user returns to the tab
+      const notification = document.createElement("div");
+      notification.className =
+        "fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse";
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          <span>Timer Complete!</span>
+        </div>
+      `;
+
+      document.body.appendChild(notification);
+
+      // Remove the notification after 5 seconds
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 5000);
     },
 
     // Data Management
@@ -1158,6 +1300,20 @@ document.addEventListener("alpine:init", () => {
         "visibilitychange",
         this.handleVisibilityChange
       );
+
+      // Clean up audio context event listeners
+      if (this.initAudioHandler) {
+        document.removeEventListener("click", this.initAudioHandler);
+        document.removeEventListener("touchstart", this.initAudioHandler);
+        document.removeEventListener("keydown", this.initAudioHandler);
+      }
+
+      // Close audio context if it exists
+      if (this.audioContext && this.audioContext.close) {
+        this.audioContext.close().catch((error) => {
+          console.log("Could not close audio context:", error);
+        });
+      }
     },
   }));
 });
